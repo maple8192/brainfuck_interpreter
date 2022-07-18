@@ -1,9 +1,11 @@
+use std::env;
 use std::fs;
 
-const CODE_PATH: &str = "code.bf";
-
 fn main() {
-    let content = fs::read_to_string(CODE_PATH).unwrap();
+    let args: Vec<String> = env::args().collect();
+
+    let code_path = &args[1];
+    let content = fs::read_to_string(code_path).unwrap();
 
     println!("{}", content);
 }
