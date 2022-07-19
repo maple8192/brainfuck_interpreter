@@ -8,6 +8,19 @@ fn main() {
     let content = fs::read_to_string(code_path).unwrap();
 
     let code = extract_code(content);
+
+    for i in 0..code.len() {
+        match code[i] {
+            Token::Inc => println!("increment"),
+            Token::Dec => println!("decrement"),
+            Token::IncPtr => println!("increment pointer"),
+            Token::DecPtr => println!("decrement pointer"),
+            Token::LoopIn => println!("enter loop"),
+            Token::LoopOut => println!("return or exit loop"),
+            Token::Print => println!("print character"),
+            Token::Read => println!("read character"),
+        }
+    }
 }
 
 enum Token {
