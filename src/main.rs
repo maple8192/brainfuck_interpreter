@@ -13,18 +13,7 @@ fn main() {
 
     let code = extract_code(content);
 
-    for i in 0..code.len() {
-        match code[i] {
-            Token::Inc => println!("increment"),
-            Token::Dec => println!("decrement"),
-            Token::IncPtr => println!("increment pointer"),
-            Token::DecPtr => println!("decrement pointer"),
-            Token::LoopIn => println!("enter loop"),
-            Token::LoopOut => println!("return or exit loop"),
-            Token::Print => println!("print character"),
-            Token::Read => println!("read character"),
-        }
-    }
+    run(code);
 }
 
 enum Token {
@@ -64,4 +53,85 @@ fn extract_code(raw_code: String) -> Vec<Token> {
     }
 
     code
+}
+
+fn run(code: Vec<Token>) {
+    let mut program_pointer: isize = 0;
+    let mut pointer: isize = 0;
+    let mut memory: Vec<u8> = vec![0];
+
+    while program_pointer < code.len() as isize {
+        let current = &code[program_pointer as usize];
+
+        match current {
+            Token::Inc => memory[pointer as usize] = memory[pointer as usize].wrapping_add(1),
+            Token::Dec => memory[pointer as usize] = memory[pointer as usize].wrapping_sub(1),
+            Token::IncPtr => {
+                pointer += 1;
+                if pointer >= memory.len() as isize {
+                    memory.push(0);
+                }
+            },
+            Token::DecPtr => {
+                pointer -= 1;
+                if pointer < 0 {
+                    panic!("Pointer cannot be less than zero. {}", program_pointer);
+                }
+            },
+            Token::LoopIn => {
+                if memory[pointer as usize] == 0 {
+                    let mut count = 0;
+                    for i in (program_pointer + 1)..=(code.len() as isize) {
+                        if i == code.len() as isize {
+                            panic!("No corresponding bracket. {}", program_pointer);
+                        }
+
+                        match code[i as usize] {
+                            Token::LoopIn => {
+                                count += 1;
+                            }
+                            Token::LoopOut => {
+                                if count == 0 {
+                                    program_pointer = i;
+                                    break;
+                                } else {
+                                    count -= 1;
+                                }
+                            }
+                            _ => (),
+                        }
+                    }
+                }
+            },
+            Token::LoopOut => {
+                if memory[pointer as usize] != 0 {
+                    let mut count = 0;
+                    for i in (0..=program_pointer).rev() {
+                        if i == 0 {
+                            panic!("No corresponding bracket. {}", program_pointer);
+                        }
+
+                        match code[(i - 1) as usize] {
+                            Token::LoopIn => {
+                                if count == 0 {
+                                    program_pointer = i - 1;
+                                    break;
+                                } else {
+                                    count -= 1;
+                                }
+                            }
+                            Token::LoopOut => {
+                                count += 1;
+                            }
+                            _ => (),
+                        }
+                    }
+                }
+            },
+            Token::Print => print!("{}", memory[pointer as usize] as char),
+            Token::Read => (),
+        }
+
+        program_pointer += 1;
+    }
 }
