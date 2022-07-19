@@ -1,11 +1,15 @@
 use std::env;
 use std::fs;
+use std::path::PathBuf;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+    let path_buf = PathBuf::from(args.get(1).unwrap());
 
-    let code_path = &args[1];
-    let content = fs::read_to_string(code_path).unwrap();
+    let content = fs::read_to_string(path_buf.as_path()).unwrap();
+
+    let extension = path_buf.extension().unwrap().to_string_lossy().to_string();
+    if extension != "bf" && extension != "b" { panic!("This isn't brainfuck source file."); }
 
     let code = extract_code(content);
 
