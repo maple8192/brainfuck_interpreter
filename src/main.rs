@@ -4,16 +4,22 @@ use std::path::PathBuf;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let path_buf = PathBuf::from(args.get(1).unwrap());
 
-    let content = fs::read_to_string(path_buf.as_path()).unwrap();
+    let code_path = PathBuf::from(args.get(1).unwrap());
+    let input_path = if args.len() >= 2 { Some(PathBuf::from(args.get(2).unwrap())) } else { None };
 
-    let extension = path_buf.extension().unwrap().to_string_lossy().to_string();
+    let code_content = fs::read_to_string(code_path.as_path()).unwrap();
+    let input_content = match input_path {
+        Some(p) => fs::read_to_string(p.as_path()).unwrap(),
+        None => "".to_string(),
+    };
+
+    let extension = code_path.extension().unwrap().to_string_lossy().to_string();
     if extension != "bf" && extension != "b" { panic!("This isn't brainfuck source file."); }
 
-    let code = extract_code(content);
+    let code = extract_code(code_content);
 
-    run(code);
+    run(code, input_content);
 }
 
 enum Token {
@@ -55,10 +61,14 @@ fn extract_code(raw_code: String) -> Vec<Token> {
     code
 }
 
-fn run(code: Vec<Token>) {
+fn run(code: Vec<Token>, input: String) {
     let mut program_pointer: isize = 0;
     let mut pointer: isize = 0;
     let mut memory: Vec<u8> = vec![0];
+
+    let input_vec: Vec<char> = input.chars().collect();
+
+    let mut input_counter: usize = 0;
 
     while program_pointer < code.len() as isize {
         let current = &code[program_pointer as usize];
@@ -129,7 +139,10 @@ fn run(code: Vec<Token>) {
                 }
             },
             Token::Print => print!("{}", memory[pointer as usize] as char),
-            Token::Read => (),
+            Token::Read => {
+                memory[pointer as usize] = input_vec[input_counter] as u8;
+                input_counter += 1;
+            },
         }
 
         program_pointer += 1;
