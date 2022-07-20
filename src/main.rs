@@ -147,4 +147,6 @@ fn run(code: Vec<Token>, input: String) {
 
         program_pointer += 1;
     }
+
+    println!();
 }
