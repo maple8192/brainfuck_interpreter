@@ -1,12 +1,6 @@
 use std::env;
 use std::fs;
-use std::io::stdout;
 use std::path::PathBuf;
-use crossterm::cursor::{RestorePosition, SavePosition};
-use crossterm::event::{Event, read};
-use crossterm::ExecutableCommand;
-use crossterm::style::Print;
-use crossterm::terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -135,27 +129,7 @@ fn run(code: Vec<Token>) {
                 }
             },
             Token::Print => print!("{}", memory[pointer as usize] as char),
-            Token::Read => {
-                enable_raw_mode().unwrap();
-
-                stdout()
-                    .execute(SavePosition).unwrap()
-                    .execute(Print(" (Waiting your input...)")).unwrap();
-
-                loop {
-                    let e = read().unwrap();
-
-                    if let Event::Key(_ev) = e {
-                        break;
-                    }
-                }
-
-                stdout()
-                    .execute(RestorePosition).unwrap()
-                    .execute(Clear(ClearType::FromCursorDown)).unwrap();
-
-                disable_raw_mode().unwrap();
-            },
+            Token::Read => (),
         }
 
         program_pointer += 1;
