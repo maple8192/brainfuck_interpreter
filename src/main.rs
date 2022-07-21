@@ -70,6 +70,9 @@ fn run(code: Vec<Token>, input: String) {
 
     let mut input_counter: usize = 0;
 
+    println!("Output:");
+    print!("  ");
+
     while program_pointer < code.len() as isize {
         let current = &code[program_pointer as usize];
 
@@ -138,7 +141,14 @@ fn run(code: Vec<Token>, input: String) {
                     }
                 }
             },
-            Token::Print => print!("{}", memory[pointer as usize] as char),
+            Token::Print => {
+                let c = memory[pointer as usize] as char;
+
+                print!("{}", c);
+                if c == '\n' {
+                    print!("  ");
+                }
+            },
             Token::Read => {
                 memory[pointer as usize] = input_vec[input_counter] as u8;
                 input_counter += 1;
