@@ -1,4 +1,4 @@
-use crate::Token;
+use crate::common::Token;
 
 pub fn extract_code(raw_code: String) -> Vec<Token> {
     let mut code: Vec<Token> = Vec::new();

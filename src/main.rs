@@ -1,7 +1,9 @@
 mod file_reader;
 mod code_processor;
+mod common;
 
 use std::env;
+use crate::common::Token;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -17,17 +19,6 @@ fn main() {
     let code = code_processor::extract_code(code_content);
 
     run(code, input_content);
-}
-
-pub enum Token {
-    Inc,
-    Dec,
-    IncPtr,
-    DecPtr,
-    LoopIn,
-    LoopOut,
-    Print,
-    Read,
 }
 
 fn run(code: Vec<Token>, input: String) {
