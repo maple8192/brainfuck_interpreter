@@ -9,8 +9,8 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     let (code_content, input_content) = file_reader::read_files(
-        args.get(1).unwrap().to_string(),
-        if args.len() >= 2 { Some(args.get(2).unwrap().to_string()) } else { None }
+        args.get(1).unwrap(),
+        if args.len() >= 2 { Some(args.get(2).unwrap()) } else { None }
     );
 
     let code_content = code_content.unwrap();
