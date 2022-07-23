@@ -1,3 +1,5 @@
+mod file_reader;
+
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -5,17 +7,13 @@ use std::path::PathBuf;
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    let code_path = PathBuf::from(args.get(1).unwrap());
-    let input_path = if args.len() >= 2 { Some(PathBuf::from(args.get(2).unwrap())) } else { None };
+    let (code_content, input_content) = file_reader::read_files(
+        args.get(1).unwrap().to_string(),
+        if args.len() >= 2 { Some(args.get(2).unwrap().to_string()) } else { None }
+    );
 
-    let code_content = fs::read_to_string(code_path.as_path()).unwrap();
-    let input_content = match input_path {
-        Some(p) => fs::read_to_string(p.as_path()).unwrap(),
-        None => "".to_string(),
-    };
-
-    let extension = code_path.extension().unwrap().to_string_lossy().to_string();
-    if extension != "bf" && extension != "b" { panic!("This isn't brainfuck source file."); }
+    let code_content = code_content.unwrap();
+    let input_content = input_content.unwrap().unwrap();
 
     let code = extract_code(code_content);
 
