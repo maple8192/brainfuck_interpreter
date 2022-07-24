@@ -98,7 +98,7 @@ impl Machine {
         self.memory[self.pointer as usize] as char
     }
 
-    fn read_character<E: Error>(&mut self, c: char) {
+    fn read_character(&mut self, c: char) {
         self.memory[self.pointer as usize] = c as u8;
     }
 }
