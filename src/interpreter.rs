@@ -94,7 +94,7 @@ impl Machine {
         Ok(())
     }
 
-    fn get_character<E: Error>(&self) -> char {
+    fn get_character(&self) -> char {
         self.memory[self.pointer as usize] as char
     }
 
