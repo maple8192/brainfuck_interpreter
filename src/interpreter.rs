@@ -101,4 +101,29 @@ impl Machine {
     fn set_character(&mut self, c: char) {
         self.memory[self.pointer as usize] = c as u8;
     }
+
+    fn step<E: Error>(&mut self) -> Result<(bool, Option<char>), E> {
+        if self.program_pointer >= self.code.len() {
+            return Ok((false, None));
+        }
+
+        let current_command = &self.code[self.program_pointer];
+
+        let mut output = None;
+
+        match current_command {
+            Token::Inc => { self.increment(); Ok(()) },
+            Token::Dec => { self.decrement(); Ok(()) },
+            Token::IncPtr => { self.increment_pointer(); Ok(()) },
+            Token::DecPtr => self.decrement_pointer(),
+            Token::LoopIn => if self.is_zero() { self.jump_to_close_bracket() } else { Ok(()) },
+            Token::LoopOut => if self.is_zero() { Ok(()) } else { self.jump_to_open_bracket() },
+            Token::Print => { output = Some(self.get_character()); Ok(()) },
+            Token::Read => { self.set_character(self.input[self.input_pointer]); self.input_pointer += 1; Ok(()) },
+        }?;
+
+        self.program_pointer += 1;
+
+        Ok((false, output))
+    }
 }
