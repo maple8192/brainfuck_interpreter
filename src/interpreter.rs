@@ -1,5 +1,5 @@
-use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::Debug;
+use crate::error::InterpreterError;
 use crate::machine::Machine;
 
 pub struct Interpreter {
@@ -16,9 +16,16 @@ impl Interpreter {
         print!("  ");
 
         loop {
-            let (end, output) = match self.machine.step::<MyError>() {
+            let (end, output) = match self.machine.step() {
                 Ok(r) => r,
-                Err(_) => break,
+                Err(e) => {
+                    println!();
+                    println!();
+                    println!("Error:");
+                    print!("  {}", e.to_string());
+
+                    break;
+                },
             };
 
             if let Some(o) = output {
@@ -36,23 +43,4 @@ impl Interpreter {
 
         println!();
     }
-}
-
-// 暫定の自作Error
-struct MyError;
-
-impl Debug for MyError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
-}
-
-impl Display for MyError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for MyError {
-
 }

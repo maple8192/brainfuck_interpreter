@@ -3,6 +3,7 @@ mod code_processor;
 mod common;
 mod interpreter;
 mod machine;
+mod error;
 
 use std::env;
 use crate::common::Token;

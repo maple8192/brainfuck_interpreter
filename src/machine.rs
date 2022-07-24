@@ -1,4 +1,4 @@
-use std::error::Error;
+use crate::error::InterpreterError;
 use crate::Token;
 
 pub struct Machine {
@@ -37,10 +37,10 @@ impl Machine {
         }
     }
 
-    fn decrement_pointer<E: Error>(&mut self) -> Result<(), E> {
+    fn decrement_pointer(&mut self) -> Result<(), InterpreterError> {
         self.pointer -= 1;
         if self.pointer < 0 {
-            todo!()
+            return Err(InterpreterError::new("ポインタの値が負です。".to_string()));
         }
 
         Ok(())
@@ -50,11 +50,11 @@ impl Machine {
         self.memory[self.pointer as usize] == 0
     }
 
-    fn jump_to_close_bracket<E: Error>(&mut self) -> Result<(), E> {
+    fn jump_to_close_bracket(&mut self) -> Result<(), InterpreterError> {
         let mut count = 0;
         for i in (self.program_pointer + 1)..=self.code.len() {
             if i == self.code.len() {
-                todo!()
+                return Err(InterpreterError::new("対応する]が見つかりません。".to_string()));
             }
 
             match self.code[i] {
@@ -72,11 +72,11 @@ impl Machine {
         Ok(())
     }
 
-    fn jump_to_open_bracket<E: Error>(&mut self) -> Result<(), E> {
+    fn jump_to_open_bracket(&mut self) -> Result<(), InterpreterError> {
         let mut count = 0;
         for i in (0..=self.program_pointer).rev() {
             if i == 0 {
-                todo!()
+                return Err(InterpreterError::new("対応する[が見つかりません。".to_string()));
             }
 
             match self.code[i - 1] {
@@ -102,7 +102,7 @@ impl Machine {
         self.memory[self.pointer as usize] = c as u8;
     }
 
-    pub fn step<E: Error>(&mut self) -> Result<(bool, Option<char>), E> {
+    pub fn step(&mut self) -> Result<(bool, Option<char>), InterpreterError> {
         if self.program_pointer >= self.code.len() {
             return Ok((true, None));
         }
@@ -119,7 +119,10 @@ impl Machine {
             Token::LoopIn => if self.is_zero() { self.jump_to_close_bracket() } else { Ok(()) },
             Token::LoopOut => if self.is_zero() { Ok(()) } else { self.jump_to_open_bracket() },
             Token::Print => { output = Some(self.get_character()); Ok(()) },
-            Token::Read => { self.set_character(self.input[self.input_pointer]); self.input_pointer += 1; Ok(()) },
+            Token::Read => {
+                self.set_character(if self.input_pointer < self.input.len() { self.input[self.input_pointer] } else { 0 as char });
+                self.input_pointer += 1; Ok(())
+            },
         }?;
 
         self.program_pointer += 1;
