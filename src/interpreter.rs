@@ -46,7 +46,7 @@ impl Machine {
         Ok(())
     }
 
-    fn is_zero<E: Error>(&self) -> bool {
+    fn is_zero(&self) -> bool {
         self.memory[self.pointer as usize] == 0
     }
 
