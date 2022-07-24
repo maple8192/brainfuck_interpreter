@@ -102,9 +102,9 @@ impl Machine {
         self.memory[self.pointer as usize] = c as u8;
     }
 
-    fn step<E: Error>(&mut self) -> Result<(bool, Option<char>), E> {
+    pub fn step<E: Error>(&mut self) -> Result<(bool, Option<char>), E> {
         if self.program_pointer >= self.code.len() {
-            return Ok((false, None));
+            return Ok((true, None));
         }
 
         let current_command = &self.code[self.program_pointer];
