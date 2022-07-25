@@ -5,9 +5,11 @@ mod interpreter;
 mod machine;
 mod error;
 mod arguments_analyzer;
+mod debugger;
 
 use crate::arguments_analyzer::analyze_args;
 use crate::common::Token;
+use crate::debugger::Debugger;
 use crate::interpreter::Interpreter;
 use crate::machine::Machine;
 
@@ -30,5 +32,9 @@ fn main() {
 
     let machine = Machine::new(code, input_content);
 
-    Interpreter::new(machine).run();
+    if is_debug_mode {
+        Debugger::new(machine).debug_run();
+    } else {
+        Interpreter::new(machine).run();
+    }
 }
