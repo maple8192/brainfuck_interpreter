@@ -7,3 +7,4 @@ edition = "2018"
 
 [dependencies]
 clap = "3.2.14"
+crossterm = "0.24.0"
