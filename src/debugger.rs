@@ -28,7 +28,7 @@ impl Debugger {
             EnterAlternateScreen,
         ).unwrap();
 
-        (self.terminal_row, self.terminal_col) = terminal::size().unwrap();
+        (self.terminal_col, self.terminal_row) = terminal::size().unwrap();
 
         self.render();
 
@@ -38,7 +38,7 @@ impl Debugger {
             let current_terminal_size = terminal_size_receiver.try_recv();
             let key_input = key_input_receiver.try_recv();
 
-            if let Ok((current_row, current_col)) = current_terminal_size {
+            if let Ok((current_col, current_row)) = current_terminal_size {
                 if current_row != self.terminal_row || current_col != self.terminal_col {
                     self.terminal_row = current_row;
                     self.terminal_col = current_col;
