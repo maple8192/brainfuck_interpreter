@@ -8,7 +8,7 @@ use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers, read};
 use crossterm::{execute, terminal};
 use crossterm::style::Print;
 use crossterm::terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
-use crate::Machine;
+use crate::{Machine, Token};
 
 pub struct Debugger {
     machine: Machine,
@@ -64,9 +64,51 @@ impl Debugger {
         execute!(
             stdout(),
             Clear(ClearType::All),
-            MoveTo(5, 5),
-            Print(format!("Row: {}, Column: {}", self.terminal_row, self.terminal_col)),
         ).unwrap();
+
+        // デバッグモードの説明
+        execute!(
+            stdout(),
+            MoveTo(1, 0),
+            Print(format!("\"▶\" : Next step     \"Ctrl+c\" : Terminate")),
+        ).unwrap();
+
+        // ソースコードの表示
+        let mut code_str = String::new();
+        for i in 0..self.machine.code.len() {
+            if i != 0 && i % (self.terminal_col - 6) as usize == 0 {
+                code_str.push_str("\r\n   ");
+            }
+
+            match self.machine.code[i] {
+                Token::Inc => code_str.push('+'),
+                Token::Dec => code_str.push('-'),
+                Token::IncPtr => code_str.push('>'),
+                Token::DecPtr => code_str.push('<'),
+                Token::LoopIn => code_str.push('['),
+                Token::LoopOut => code_str.push(']'),
+                Token::Print => code_str.push('.'),
+                Token::Read => code_str.push(','),
+            }
+        }
+        execute!(
+            stdout(),
+            MoveTo(1, 2),
+            Print("Code:"),
+            MoveTo(3, 3),
+            Print(code_str),
+        ).unwrap();
+
+        // メモリの表示
+
+
+        // 入力の表示
+
+
+        // 出力の表示
+
+
+        // エラーの表示
     }
 
     fn observe_terminal_size(&self) -> Receiver<(u16, u16)> {
