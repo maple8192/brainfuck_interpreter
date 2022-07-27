@@ -120,12 +120,19 @@ impl Debugger {
         ).unwrap();
 
         // 入力の表示
+        let mut input_str = String::new();
+        for i in 0..self.machine.input.len() {
+            match self.machine.input[i] {
+                '\n' => input_str.push_str("\n   "),
+                _ => input_str.push(self.machine.input[i]),
+            }
+        }
         execute!(
             stdout(),
             MoveTo(1, 20),
             Print("Input:"),
             MoveTo(3, 21),
-            Print(""),
+            Print(input_str),
         ).unwrap();
 
         // 出力の表示
