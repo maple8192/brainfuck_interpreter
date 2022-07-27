@@ -100,7 +100,24 @@ impl Debugger {
         ).unwrap();
 
         // メモリの表示
+        let mut memory_str = String::new();
+        for i in 0..self.machine.memory.len() {
+            if i != 0 && i % ((self.terminal_col - 6) / 5) as usize == 0 {
+                memory_str.push_str("\r\n   ");
+                for j in 0..(i / ((self.terminal_col - 6) / 5) as usize) {
+                    memory_str.push(' ');
+                }
+            }
 
+            memory_str.push_str(format!("{:>5}", self.machine.memory[i]).as_str());
+        }
+        execute!(
+            stdout(),
+            MoveTo(1, 11),
+            Print("Memory:"),
+            MoveTo(3, 12),
+            Print(memory_str),
+        ).unwrap();
 
         // 入力の表示
 
