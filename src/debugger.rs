@@ -120,7 +120,13 @@ impl Debugger {
         ).unwrap();
 
         // 入力の表示
-
+        execute!(
+            stdout(),
+            MoveTo(1, 20),
+            Print("Input:"),
+            MoveTo(3, 21),
+            Print(""),
+        ).unwrap();
 
         // 出力の表示
 
