@@ -69,6 +69,7 @@ impl Debugger {
                 Ok(r) => r,
                 Err(e) => {
                     self.error = Some(e.to_string());
+                    self.render();
                     return;
                 },
             };
