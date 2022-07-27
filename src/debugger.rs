@@ -50,6 +50,7 @@ impl Debugger {
             if let Ok(event) = key_input {
                 match event {
                     KeyEvent { code: KeyCode::Char('c'), modifiers: KeyModifiers::CONTROL } => break,
+                    KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::NONE } => self.next_step(),
                     _ => (),
                 }
             }
@@ -60,6 +61,28 @@ impl Debugger {
             LeaveAlternateScreen,
         ).unwrap();
         disable_raw_mode().unwrap();
+    }
+
+    fn next_step(&mut self) {
+        if let None = self.error {
+            let (end, output) = match self.machine.step() {
+                Ok(r) => r,
+                Err(e) => {
+                    self.error = Some(e.to_string());
+                    return;
+                },
+            };
+
+            if let Some(o) = output {
+                self.output.push(o);
+            }
+
+            if end {
+                return;
+            }
+
+            self.render();
+        }
     }
 
     fn render(&self) {
