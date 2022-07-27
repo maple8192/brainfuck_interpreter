@@ -104,7 +104,7 @@ impl Debugger {
         for i in 0..self.machine.memory.len() {
             if i != 0 && i % ((self.terminal_col - 6) / 5) as usize == 0 {
                 memory_str.push_str("\r\n   ");
-                for j in 0..(i / ((self.terminal_col - 6) / 5) as usize) {
+                for _ in 0..(i / ((self.terminal_col - 6) / 5) as usize) {
                     memory_str.push(' ');
                 }
             }
