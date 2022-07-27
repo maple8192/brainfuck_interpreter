@@ -15,11 +15,12 @@ pub struct Debugger {
     terminal_row: u16,
     terminal_col: u16,
     output: String,
+    error: Option<String>,
 }
 
 impl Debugger {
     pub fn new(machine: Machine) -> Self {
-        Debugger { machine, terminal_row: 0, terminal_col: 0, output: Stirng::new() }
+        Debugger { machine, terminal_row: 0, terminal_col: 0, output: String::new(), error: None }
     }
 
     pub fn debug_run(&mut self) {
@@ -153,6 +154,13 @@ impl Debugger {
         ).unwrap();
 
         // エラーの表示
+        execute!(
+            stdout(),
+            MoveTo(1, 38),
+            Print("Error:"),
+            MoveTo(3, 39),
+            Print(if let Some(e) = self.error.clone() { e } else { "".to_string() }),
+        ).unwrap();
     }
 
     fn observe_terminal_size(&self) -> Receiver<(u16, u16)> {
