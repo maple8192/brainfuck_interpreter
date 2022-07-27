@@ -3,7 +3,7 @@ use std::sync::mpsc;
 use std::sync::mpsc::Receiver;
 use std::thread;
 use std::time::Duration;
-use crossterm::cursor::MoveTo;
+use crossterm::cursor::{Hide, MoveTo};
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers, read};
 use crossterm::{execute, terminal};
 use crossterm::style::Print;
@@ -28,6 +28,7 @@ impl Debugger {
         execute!(
             stdout(),
             EnterAlternateScreen,
+            Hide,
         ).unwrap();
 
         (self.terminal_col, self.terminal_row) = terminal::size().unwrap();
