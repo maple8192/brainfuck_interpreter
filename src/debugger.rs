@@ -14,11 +14,12 @@ pub struct Debugger {
     machine: Machine,
     terminal_row: u16,
     terminal_col: u16,
+    output: String,
 }
 
 impl Debugger {
     pub fn new(machine: Machine) -> Self {
-        Debugger { machine, terminal_row: 0, terminal_col: 0 }
+        Debugger { machine, terminal_row: 0, terminal_col: 0, output: Stirng::new() }
     }
 
     pub fn debug_run(&mut self) {
@@ -136,7 +137,20 @@ impl Debugger {
         ).unwrap();
 
         // 出力の表示
-
+        let mut output_str = String::new();
+        for i in 0..self.output.len() {
+            match self.output.chars().nth(i).unwrap() {
+                '\n' => output_str.push_str("\n   "),
+                _ => output_str.push(self.output.chars().nth(i).unwrap()),
+            }
+        }
+        execute!(
+            stdout(),
+            MoveTo(1, 29),
+            Print("Output:"),
+            MoveTo(3, 30),
+            Print(output_str),
+        ).unwrap();
 
         // エラーの表示
     }
