@@ -16,11 +16,12 @@ pub struct Debugger {
     terminal_col: u16,
     output: String,
     error: Option<String>,
+    terminal_cache: Vec<String>,
 }
 
 impl Debugger {
     pub fn new(machine: Machine) -> Self {
-        Debugger { machine, terminal_row: 0, terminal_col: 0, output: String::new(), error: None }
+        Debugger { machine, terminal_row: 0, terminal_col: 0, output: String::new(), error: None, terminal_cache: Vec::new() }
     }
 
     pub fn debug_run(&mut self) {
@@ -87,105 +88,109 @@ impl Debugger {
         }
     }
 
-    fn render(&self) {
-        execute!(
-            stdout(),
-            Clear(ClearType::All),
-        ).unwrap();
+    fn render(&mut self) {
+        let mut display = Vec::<String>::new();
+        for _ in 0..self.terminal_row { display.push("".to_string()); }
+
+        let mut current_line;
 
         // デバッグモードの説明
-        execute!(
-            stdout(),
-            MoveTo(1, 0),
-            Print(format!("\"▶\" : Next step     \"Esc\" : Exit")),
-        ).unwrap();
+        display[0] = "\"▶\" : Next step     \"Esc\" : Exit".to_string();
 
         // ソースコードの表示
-        let mut code_str = String::new();
+        display[2] = "Code:".to_string();
+        display[3] = "  ".to_string();
+
+       current_line = 3;
         for i in 0..self.machine.code.len() {
             if i != 0 && i % (self.terminal_col - 6) as usize == 0 {
-                code_str.push_str("\r\n   ");
+                current_line += 1;
+                display[current_line] = "  ".to_string();
             }
 
             match self.machine.code[i] {
-                Token::Inc => code_str.push('+'),
-                Token::Dec => code_str.push('-'),
-                Token::IncPtr => code_str.push('>'),
-                Token::DecPtr => code_str.push('<'),
-                Token::LoopIn => code_str.push('['),
-                Token::LoopOut => code_str.push(']'),
-                Token::Print => code_str.push('.'),
-                Token::Read => code_str.push(','),
+                Token::Inc => display[current_line].push('+'),
+                Token::Dec => display[current_line].push('-'),
+                Token::IncPtr => display[current_line].push('>'),
+                Token::DecPtr => display[current_line].push('<'),
+                Token::LoopIn => display[current_line].push('['),
+                Token::LoopOut => display[current_line].push(']'),
+                Token::Print => display[current_line].push('.'),
+                Token::Read => display[current_line].push(','),
             }
         }
-        execute!(
-            stdout(),
-            MoveTo(1, 2),
-            Print("Code:"),
-            MoveTo(3, 3),
-            Print(code_str),
-        ).unwrap();
 
         // メモリの表示
-        let mut memory_str = String::new();
+        display[11] = "Memory:".to_string();
+        display[12] = "  ".to_string();
+
+        current_line = 12;
         for i in 0..self.machine.memory.len() {
             if i != 0 && i % ((self.terminal_col - 6) / 5) as usize == 0 {
-                memory_str.push_str("\r\n   ");
-                for _ in 0..(i / ((self.terminal_col - 6) / 5) as usize) {
-                    memory_str.push(' ');
-                }
+                current_line += 1;
+                display[current_line] = "  ".to_string();
             }
 
-            memory_str.push_str(format!("{:>5}", self.machine.memory[i]).as_str());
+            display[current_line].push_str(format!("{:>5}", self.machine.memory[i]).as_str());
         }
-        execute!(
-            stdout(),
-            MoveTo(1, 11),
-            Print("Memory:"),
-            MoveTo(3, 12),
-            Print(memory_str),
-        ).unwrap();
 
         // 入力の表示
-        let mut input_str = String::new();
+        display[20] = "Input:".to_string();
+        display[21] = "  ".to_string();
+
+        current_line = 21;
         for i in 0..self.machine.input.len() {
             match self.machine.input[i] {
-                '\n' => input_str.push_str("\n   "),
-                _ => input_str.push(self.machine.input[i]),
+                '\n' => { current_line += 1; display[current_line] = "  ".to_string(); }
+                _ => display[current_line].push(self.machine.input[i]),
             }
         }
-        execute!(
-            stdout(),
-            MoveTo(1, 20),
-            Print("Input:"),
-            MoveTo(3, 21),
-            Print(input_str),
-        ).unwrap();
 
         // 出力の表示
-        let mut output_str = String::new();
+        display[29] = "Output:".to_string();
+        display[30] = "  ".to_string();
+
+        current_line = 30;
         for i in 0..self.output.len() {
             match self.output.chars().nth(i).unwrap() {
-                '\n' => output_str.push_str("\n   "),
-                _ => output_str.push(self.output.chars().nth(i).unwrap()),
+                '\n' => { current_line += 1; display[current_line] = "  ".to_string() },
+                _ => display[current_line].push(self.output.chars().nth(i).unwrap()),
             }
         }
-        execute!(
-            stdout(),
-            MoveTo(1, 29),
-            Print("Output:"),
-            MoveTo(3, 30),
-            Print(output_str),
-        ).unwrap();
 
         // エラーの表示
-        execute!(
-            stdout(),
-            MoveTo(1, 38),
-            Print("Error:"),
-            MoveTo(3, 39),
-            Print(if let Some(e) = self.error.clone() { e } else { "".to_string() }),
-        ).unwrap();
+        display[38] = "Error:".to_string();
+        display[39] = if let Some(e) = self.error.clone() { format!("  {}", e) } else { "".to_string() };
+
+        // 表示
+        if self.terminal_cache.len() != display.len() {
+            execute!(
+                stdout(),
+                Clear(ClearType::All),
+            ).unwrap();
+
+            for i in 0..display.len() {
+                execute!(
+                    stdout(),
+                    MoveTo(1, i as u16),
+                    Print(display[i].clone()),
+                ).unwrap();
+            }
+        } else {
+            for i in 0..display.len() {
+                if self.terminal_cache[i] != display[i] {
+                    execute!(
+                        stdout(),
+                        MoveTo(0, i as u16),
+                        Clear(ClearType::CurrentLine),
+                        MoveTo(1, i as u16),
+                        Print(display[i].clone()),
+                    ).unwrap();
+                }
+            }
+        }
+
+        self.terminal_cache = display;
     }
 
     fn observe_terminal_size(&self) -> Receiver<(u16, u16)> {
