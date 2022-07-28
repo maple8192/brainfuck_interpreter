@@ -141,6 +141,11 @@ impl Debugger {
             if i != 0 && i % (self.terminal_col - 6) as usize == 0 {
                 current_line += 1;
                 display[current_line] = "  ".to_string();
+
+                if current_line >= 3 + 6 {
+                    display[current_line].push_str("...");
+                    break;
+                }
             }
 
             match self.machine.code[i] {
@@ -176,7 +181,15 @@ impl Debugger {
         current_line = 21;
         for i in 0..self.machine.input.len() {
             match self.machine.input[i] {
-                '\n' => { current_line += 1; display[current_line] = "  ".to_string(); }
+                '\n' => {
+                    current_line += 1;
+                    display[current_line] = "  ".to_string();
+
+                    if current_line >= 21 + 6 {
+                        display[current_line].push_str("...");
+                        break;
+                    }
+                }
                 _ => display[current_line].push(self.machine.input[i]),
             }
         }
@@ -188,7 +201,15 @@ impl Debugger {
         current_line = 30;
         for i in 0..self.output.len() {
             match self.output.chars().nth(i).unwrap() {
-                '\n' => { current_line += 1; display[current_line] = "  ".to_string() },
+                '\n' => {
+                    current_line += 1;
+                    display[current_line] = "  ".to_string();
+
+                    if current_line >= 30 + 6 {
+                        display[current_line].push_str("...");
+                        break;
+                    }
+                },
                 _ => display[current_line].push(self.output.chars().nth(i).unwrap()),
             }
         }
