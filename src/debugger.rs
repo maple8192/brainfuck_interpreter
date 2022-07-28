@@ -17,11 +17,13 @@ pub struct Debugger {
     output: String,
     error: Option<String>,
     terminal_cache: Vec<String>,
+    auto_step_tick_count: u32,
+    auto_step_speed: u32,
 }
 
 impl Debugger {
     pub fn new(machine: Machine) -> Self {
-        Debugger { machine, terminal_row: 0, terminal_col: 0, output: String::new(), error: None, terminal_cache: Vec::new() }
+        Debugger { machine, terminal_row: 0, terminal_col: 0, output: String::new(), error: None, terminal_cache: Vec::new(), auto_step_tick_count: 0, auto_step_speed: 0 }
     }
 
     pub fn debug_run(&mut self) {
@@ -38,9 +40,11 @@ impl Debugger {
 
         let terminal_size_receiver = self.observe_terminal_size();
         let key_input_receiver = self.observe_key_input();
+        let auto_step_tick_receiver = self.auto_step_tick();
         loop {
             let current_terminal_size = terminal_size_receiver.try_recv();
             let key_input = key_input_receiver.try_recv();
+            let auto_step_tick = auto_step_tick_receiver.try_recv();
 
             if let Ok((current_col, current_row)) = current_terminal_size {
                 if current_row != self.terminal_row || current_col != self.terminal_col {
@@ -52,9 +56,28 @@ impl Debugger {
             if let Ok(event) = key_input {
                 match event {
                     KeyEvent { code: KeyCode::Esc, modifiers: KeyModifiers::NONE } => break,
-                    KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::NONE } => self.next_step(),
+                    KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::NONE } => self.next_step(true),
+                    KeyEvent { code: KeyCode::Up, modifiers: KeyModifiers::NONE } => if self.auto_step_speed < 10 { self.auto_step_speed += 1; self.render(); },
+                    KeyEvent { code: KeyCode::Down, modifiers: KeyModifiers::NONE } => if self.auto_step_speed > 0 { self.auto_step_speed -= 1; self.render(); },
                     _ => (),
                 }
+            }
+            if let Ok(()) = auto_step_tick {
+                match self.auto_step_speed {
+                    1 => if self.auto_step_tick_count % 25 == 0 { self.next_step(true); }
+                    2 => if self.auto_step_tick_count % 12 == 0 { self.next_step(true); }
+                    3 => if self.auto_step_tick_count % 6 == 0 { self.next_step(true); }
+                    4 => if self.auto_step_tick_count % 3 == 0 { self.next_step(true); }
+                    5 => self.next_step(true),
+                    6 => { self.next_step(false); self.next_step(true); }
+                    7 => { for _ in 0..4 { self.next_step(false); } self.render(); }
+                    8 => { for _ in 0..8 { self.next_step(false); } self.render(); }
+                    9 => { for _ in 0..16 { self.next_step(false); } self.render(); }
+                    10 => { for _ in 0..100 { self.next_step(false); } self.render(); }
+                    _ => (),
+                }
+
+                self.auto_step_tick_count += 1;
             }
         }
 
@@ -65,13 +88,13 @@ impl Debugger {
         disable_raw_mode().unwrap();
     }
 
-    fn next_step(&mut self) {
+    fn next_step(&mut self, render: bool) {
         if let None = self.error {
             let (end, output) = match self.machine.step() {
                 Ok(r) => r,
                 Err(e) => {
                     self.error = Some(e.to_string());
-                    self.render();
+                    if render { self.render(); }
                     return;
                 },
             };
@@ -84,7 +107,7 @@ impl Debugger {
                 return;
             }
 
-            self.render();
+            if render {self.render(); }
         }
     }
 
@@ -95,7 +118,19 @@ impl Debugger {
         let mut current_line;
 
         // デバッグモードの説明
-        display[0] = "\"▶\" : Next step     \"Esc\" : Exit".to_string();
+        display[0] = format!("\"▶\" : Next step     \"▲\" : Auto Step Speed Up     \"▼\" : Auto Step Speed Down     (Current Auto Step : {} step/s)     \"Esc\" : Exit", match self.auto_step_speed {
+            1 => 2,
+            2 => 4,
+            3 => 8,
+            4 => 16,
+            5 => 50,
+            6 => 100,
+            7 => 200,
+            8 => 400,
+            9 => 800,
+            10 => 5000,
+            _ => 0,
+        });
 
         // ソースコードの表示
         display[2] = "Code:".to_string();
@@ -176,6 +211,11 @@ impl Debugger {
                     Print(display[i].clone()),
                 ).unwrap();
             }
+
+            execute!(
+                stdout(),
+                Hide,
+            ).unwrap();
         } else {
             for i in 0..display.len() {
                 if self.terminal_cache[i] != display[i] {
@@ -188,6 +228,11 @@ impl Debugger {
                     ).unwrap();
                 }
             }
+
+            execute!(
+                stdout(),
+                Hide,
+            ).unwrap();
         }
 
         self.terminal_cache = display;
@@ -216,6 +261,19 @@ impl Debugger {
                 if let Event::Key(e) = event {
                     tx.send(e).unwrap();
                 }
+            }
+        });
+
+        rx
+    }
+
+    fn auto_step_tick(&self) -> Receiver<()> {
+        let (tx, rx) = mpsc::channel::<()>();
+
+        thread::spawn(move || {
+            loop {
+                thread::sleep(Duration::from_millis(20));
+                tx.send(()).unwrap();
             }
         });
 
