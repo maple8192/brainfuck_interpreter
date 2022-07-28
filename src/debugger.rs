@@ -50,7 +50,7 @@ impl Debugger {
             }
             if let Ok(event) = key_input {
                 match event {
-                    KeyEvent { code: KeyCode::Char('c'), modifiers: KeyModifiers::CONTROL } => break,
+                    KeyEvent { code: KeyCode::Esc, modifiers: KeyModifiers::NONE } => break,
                     KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::NONE } => self.next_step(),
                     _ => (),
                 }
@@ -97,7 +97,7 @@ impl Debugger {
         execute!(
             stdout(),
             MoveTo(1, 0),
-            Print(format!("\"▶\" : Next step     \"Ctrl+c\" : Terminate")),
+            Print(format!("\"▶\" : Next step     \"Esc\" : Exit")),
         ).unwrap();
 
         // ソースコードの表示
