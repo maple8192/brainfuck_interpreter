@@ -3,7 +3,6 @@ use std::sync::mpsc;
 use std::sync::mpsc::Receiver;
 use std::thread;
 use std::cmp::min;
-use std::collections::HashSet;
 use std::time::Duration;
 use crossterm::cursor::{Hide, MoveTo};
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers, read};
@@ -21,12 +20,11 @@ pub struct Debugger {
     terminal_cache: Vec<String>,
     auto_step_tick_count: u32,
     auto_step_speed: u32,
-    rerender_lines: HashSet<usize>,
 }
 
 impl Debugger {
     pub fn new(machine: Machine) -> Self {
-        Debugger { machine, terminal_row: 0, terminal_col: 0, output: String::new(), error: None, terminal_cache: Vec::new(), auto_step_tick_count: 0, auto_step_speed: 0, rerender_lines: HashSet::new() }
+        Debugger { machine, terminal_row: 0, terminal_col: 0, output: String::new(), error: None, terminal_cache: Vec::new(), auto_step_tick_count: 0, auto_step_speed: 0 }
     }
 
     pub fn debug_run(&mut self) {
