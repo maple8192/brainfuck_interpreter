@@ -4,19 +4,26 @@ mod common;
 mod interpreter;
 mod machine;
 mod error;
+mod arguments_analyzer;
+mod debugger;
 
-use std::env;
+use crate::arguments_analyzer::analyze_args;
 use crate::common::Token;
+use crate::debugger::Debugger;
 use crate::interpreter::Interpreter;
 use crate::machine::Machine;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let args = match analyze_args() {
+        Ok(v) => v,
+        Err(e) => { println!("{}", e); return; }
+    };
 
     let (code_content, input_content) = file_reader::read_files(
-        args.get(1).unwrap(),
-        if args.len() >= 2 { Some(args.get(2).unwrap()) } else { None }
+        args.code_file_path,
+        args.input_file_path
     );
+    let is_debug_mode = args.is_debug_mode;
 
     let code_content = code_content.unwrap();
     let input_content = input_content.unwrap().unwrap();
@@ -25,5 +32,9 @@ fn main() {
 
     let machine = Machine::new(code, input_content);
 
-    Interpreter::new(machine).run();
+    if is_debug_mode {
+        Debugger::new(machine).debug_run();
+    } else {
+        Interpreter::new(machine).run();
+    }
 }

@@ -2,12 +2,12 @@ use crate::error::InterpreterError;
 use crate::Token;
 
 pub struct Machine {
-    code: Vec<Token>,
-    input: Vec<char>,
-    program_pointer: usize,
-    pointer: isize,
-    memory: Vec<u8>,
-    input_pointer: usize,
+    pub code: Vec<Token>,
+    pub input: Vec<char>,
+    pub program_pointer: usize,
+    pub pointer: isize,
+    pub memory: Vec<u8>,
+    pub input_pointer: usize,
 }
 
 impl Machine {
