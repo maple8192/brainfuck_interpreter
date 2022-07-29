@@ -2,6 +2,7 @@ use std::io::stdout;
 use std::sync::mpsc;
 use std::sync::mpsc::Receiver;
 use std::thread;
+use std::cmp::min;
 use std::time::Duration;
 use crossterm::cursor::{Hide, MoveTo};
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers, read};
@@ -134,44 +135,101 @@ impl Debugger {
 
         // ソースコードの表示
         display[2] = "Code:".to_string();
-        display[3] = "  ".to_string();
 
-       current_line = 3;
+        let mut code_lines = Vec::<String>::new();
+        let mut code_line_count = 0;
         for i in 0..self.machine.code.len() {
-            if i != 0 && i % (self.terminal_col - 6) as usize == 0 {
-                current_line += 1;
-                display[current_line] = "  ".to_string();
+            if i % (self.terminal_col - 6) as usize == 0 {
+                code_lines.push("".to_string());
 
-                if current_line >= 3 + 6 {
-                    display[current_line].push_str("...");
-                    break;
+                if i != 0 {
+                    code_line_count += 1;
                 }
             }
 
             match self.machine.code[i] {
-                Token::Inc => display[current_line].push('+'),
-                Token::Dec => display[current_line].push('-'),
-                Token::IncPtr => display[current_line].push('>'),
-                Token::DecPtr => display[current_line].push('<'),
-                Token::LoopIn => display[current_line].push('['),
-                Token::LoopOut => display[current_line].push(']'),
-                Token::Print => display[current_line].push('.'),
-                Token::Read => display[current_line].push(','),
+                Token::Inc => code_lines[code_line_count].push('+'),
+                Token::Dec => code_lines[code_line_count].push('-'),
+                Token::IncPtr => code_lines[code_line_count].push('>'),
+                Token::DecPtr => code_lines[code_line_count].push('<'),
+                Token::LoopIn => code_lines[code_line_count].push('['),
+                Token::LoopOut => code_lines[code_line_count].push(']'),
+                Token::Print => code_lines[code_line_count].push('.'),
+                Token::Read => code_lines[code_line_count].push(','),
+            }
+        }
+
+        let code_pointer_line = self.machine.program_pointer / (self.terminal_col - 6) as usize;
+        if code_lines.len() <= 7 {
+            for i in 0..min(code_lines.len(), 7) {
+                display[i + 3] = format!("  {}", code_lines[i]);
+            }
+        } else {
+            if code_pointer_line <= 6 {
+                for i in 0..6 {
+                    display[i + 3] = format!("  {}", code_lines[i]);
+                }
+                display[9] = "  ...".to_string();
+            } else if code_pointer_line > code_lines.len() - 6 {
+                display[3] = "  ...".to_string();
+                let len = code_lines.len();
+                for i in 0..6 {
+                    display[i + 4] = format!("  {}", code_lines[len - 6 + i]);
+                }
+            } else {
+                let code_block = (code_pointer_line + 4) / 5 - 1;
+                let start_line = 1 + code_block * 5;
+                display[3] = "  ...".to_string();
+                for i in 0..5 {
+                    display[i + 4] = format!("  {}", code_lines[start_line + i]);
+                }
+                display[9] = "  ...".to_string();
             }
         }
 
         // メモリの表示
         display[11] = "Memory:".to_string();
-        display[12] = "  ".to_string();
 
-        current_line = 12;
+        let mut memory_lines = Vec::<String>::new();
+        let mut memory_line_count = 0;
         for i in 0..self.machine.memory.len() {
-            if i != 0 && i % ((self.terminal_col - 6) / 5) as usize == 0 {
-                current_line += 1;
-                display[current_line] = "  ".to_string();
+            if i % ((self.terminal_col - 6) / 5) as usize == 0 {
+                memory_lines.push("".to_string());
+
+                if i != 0 {
+                    memory_line_count += 1;
+                }
             }
 
-            display[current_line].push_str(format!("{:>5}", self.machine.memory[i]).as_str());
+            memory_lines[memory_line_count].push_str(format!("{:>5}", self.machine.memory[i]).as_str());
+        }
+
+        let memory_pointer_line = self.machine.pointer / ((self.terminal_col - 6) / 5) as isize;
+        if memory_lines.len() <= 7 {
+            for i in 0..min(memory_lines.len(), 7) {
+                display[i + 12] = format!("  {}", memory_lines[i]);
+            }
+        } else {
+            if memory_pointer_line <= 6 {
+                for i in 0..6 {
+                    display[i + 12] = format!("  {}", memory_lines[i]);
+                }
+                display[18] = "  ...".to_string();
+            } else if memory_pointer_line > (memory_lines.len() - 6) as isize {
+                display[12] = "  ...".to_string();
+                let len = memory_lines.len();
+                for i in 0..6 {
+                    display[i + 13] = format!("  {}", memory_lines[len - 6 + i]);
+                }
+            } else {
+                let memory_block = (memory_pointer_line + 4) / 5 - 1;
+                let start_line = 1 + memory_block * 5;
+                display[12] = "  ...".to_string();
+                for i in 0..5 {
+                    display[i + 13] = format!("  {}", memory_lines[(start_line + i as isize) as usize]);
+                }
+                display[18] = "  ...".to_string();
+            }
         }
 
         // 入力の表示
