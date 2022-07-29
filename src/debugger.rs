@@ -3,6 +3,7 @@ use std::sync::mpsc;
 use std::sync::mpsc::Receiver;
 use std::thread;
 use std::cmp::min;
+use std::collections::HashSet;
 use std::time::Duration;
 use crossterm::cursor::{Hide, MoveTo};
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers, read};
@@ -20,11 +21,12 @@ pub struct Debugger {
     terminal_cache: Vec<String>,
     auto_step_tick_count: u32,
     auto_step_speed: u32,
+    rerender_lines: HashSet<usize>,
 }
 
 impl Debugger {
     pub fn new(machine: Machine) -> Self {
-        Debugger { machine, terminal_row: 0, terminal_col: 0, output: String::new(), error: None, terminal_cache: Vec::new(), auto_step_tick_count: 0, auto_step_speed: 0 }
+        Debugger { machine, terminal_row: 0, terminal_col: 0, output: String::new(), error: None, terminal_cache: Vec::new(), auto_step_tick_count: 0, auto_step_speed: 0, rerender_lines: HashSet::new() }
     }
 
     pub fn debug_run(&mut self) {
@@ -283,11 +285,11 @@ impl Debugger {
                 Clear(ClearType::All),
             ).unwrap();
 
-            for i in 0..display.len() {
+            for i in 0..self.terminal_row {
                 execute!(
                     stdout(),
                     MoveTo(1, i as u16),
-                    Print(display[i].clone()),
+                    Print(display[i as usize].clone()),
                 ).unwrap();
             }
 
@@ -296,14 +298,14 @@ impl Debugger {
                 Hide,
             ).unwrap();
         } else {
-            for i in 0..display.len() {
-                if self.terminal_cache[i] != display[i] {
+            for i in 0..self.terminal_row {
+                if self.terminal_cache[i as usize] != display[i as usize] {
                     execute!(
                         stdout(),
                         MoveTo(0, i as u16),
                         Clear(ClearType::CurrentLine),
                         MoveTo(1, i as u16),
-                        Print(display[i].clone()),
+                        Print(display[i as usize].clone()),
                     ).unwrap();
                 }
             }
