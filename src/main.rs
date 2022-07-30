@@ -26,7 +26,7 @@ fn main() {
     let is_debug_mode = args.is_debug_mode;
 
     let code_content = code_content.unwrap();
-    let input_content = input_content.unwrap().unwrap();
+    let input_content = match input_content { Some(v) => v.unwrap(), None => "".to_string() };
 
     let code = code_processor::extract_code(code_content);
 
