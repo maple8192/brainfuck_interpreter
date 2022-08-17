@@ -1,11 +1,10 @@
+mod tick_pulsar;
+mod key_event_listener;
+
 use std::io::stdout;
-use std::sync::mpsc;
-use std::sync::mpsc::Receiver;
-use std::thread;
 use std::cmp::min;
-use std::time::Duration;
 use crossterm::cursor::{Hide, MoveTo};
-use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers, read};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use crossterm::{execute, terminal};
 use crossterm::style::Print;
 use crossterm::terminal::{Clear, ClearType, disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
@@ -18,13 +17,13 @@ pub struct Debugger {
     output: String,
     error: Option<String>,
     terminal_cache: Vec<String>,
-    auto_step_tick_count: u32,
-    auto_step_speed: u32,
+    tick_count: u32,
+    auto_step_level: u32,
 }
 
 impl Debugger {
     pub fn new(machine: Machine) -> Self {
-        Debugger { machine, terminal_row: 0, terminal_col: 0, output: String::new(), error: None, terminal_cache: Vec::new(), auto_step_tick_count: 0, auto_step_speed: 0 }
+        Debugger { machine, terminal_row: 0, terminal_col: 0, output: String::new(), error: None, terminal_cache: Vec::new(), tick_count: 0, auto_step_level: 0 }
     }
 
     pub fn debug_run(&mut self) {
@@ -39,36 +38,25 @@ impl Debugger {
 
         self.render();
 
-        let terminal_size_receiver = self.observe_terminal_size();
-        let key_input_receiver = self.observe_key_input();
-        let auto_step_tick_receiver = self.auto_step_tick();
-        loop {
-            let current_terminal_size = terminal_size_receiver.try_recv();
-            let key_input = key_input_receiver.try_recv();
-            let auto_step_tick = auto_step_tick_receiver.try_recv();
+        let tick_receiver = tick_pulsar::create_tick_receiver();
+        let key_event_receiver = key_event_listener::create_key_event_receiver();
 
-            if let Ok((current_col, current_row)) = current_terminal_size {
-                if current_row != self.terminal_row || current_col != self.terminal_col {
-                    self.terminal_row = current_row;
-                    self.terminal_col = current_col;
+        loop {
+            let tick = tick_receiver.try_recv();
+            let key_event = key_event_receiver.try_recv();
+
+            if let Ok(()) = tick {
+                let (current_terminal_col, current_terminal_row) = terminal::size().unwrap();
+                if self.terminal_col != current_terminal_col || self.terminal_row != current_terminal_row {
+                    (self.terminal_col, self.terminal_row) = (current_terminal_col, current_terminal_row);
                     self.render();
                 }
-            }
-            if let Ok(event) = key_input {
-                match event {
-                    KeyEvent { code: KeyCode::Esc, modifiers: KeyModifiers::NONE } => break,
-                    KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::NONE } => self.next_step(true),
-                    KeyEvent { code: KeyCode::Up, modifiers: KeyModifiers::NONE } => if self.auto_step_speed < 10 { self.auto_step_speed += 1; self.render(); },
-                    KeyEvent { code: KeyCode::Down, modifiers: KeyModifiers::NONE } => if self.auto_step_speed > 0 { self.auto_step_speed -= 1; self.render(); },
-                    _ => (),
-                }
-            }
-            if let Ok(()) = auto_step_tick {
-                match self.auto_step_speed {
-                    1 => if self.auto_step_tick_count % 25 == 0 { self.next_step(true); }
-                    2 => if self.auto_step_tick_count % 12 == 0 { self.next_step(true); }
-                    3 => if self.auto_step_tick_count % 6 == 0 { self.next_step(true); }
-                    4 => if self.auto_step_tick_count % 3 == 0 { self.next_step(true); }
+
+                match self.auto_step_level {
+                    1 => if self.tick_count % 25 == 0 { self.next_step(true); }
+                    2 => if self.tick_count % 12 == 0 { self.next_step(true); }
+                    3 => if self.tick_count % 6 == 0 { self.next_step(true); }
+                    4 => if self.tick_count % 3 == 0 { self.next_step(true); }
                     5 => self.next_step(true),
                     6 => { self.next_step(false); self.next_step(true); }
                     7 => { for _ in 0..4 { self.next_step(false); } self.render(); }
@@ -78,7 +66,16 @@ impl Debugger {
                     _ => (),
                 }
 
-                self.auto_step_tick_count += 1;
+                self.tick_count += 1;
+            }
+            if let Ok(event) = key_event {
+                match event {
+                    KeyEvent { code: KeyCode::Esc, modifiers: KeyModifiers::NONE } => break,
+                    KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::NONE } => self.next_step(true),
+                    KeyEvent { code: KeyCode::Up, modifiers: KeyModifiers::NONE } => if self.auto_step_level < 10 { self.auto_step_level += 1; self.render(); },
+                    KeyEvent { code: KeyCode::Down, modifiers: KeyModifiers::NONE } => if self.auto_step_level > 0 { self.auto_step_level -= 1; self.render(); },
+                    _ => (),
+                }
             }
         }
 
@@ -119,7 +116,7 @@ impl Debugger {
         let mut current_line;
 
         // デバッグモードの説明
-        display[0] = format!("\"▶\" : Next step     \"▲\" : Auto Step Speed Up     \"▼\" : Auto Step Speed Down     (Current Auto Step : {} step/s)     \"Esc\" : Exit", match self.auto_step_speed {
+        display[0] = format!("\"▶\" : Next step     \"▲\" : Auto Step Speed Up     \"▼\" : Auto Step Speed Down     (Current Auto Step : {} step/s)     \"Esc\" : Exit", match self.auto_step_level {
             1 => 2,
             2 => 4,
             3 => 8,
@@ -315,47 +312,5 @@ impl Debugger {
         }
 
         self.terminal_cache = display;
-    }
-
-    fn observe_terminal_size(&self) -> Receiver<(u16, u16)> {
-        let (tx, rx) = mpsc::channel::<(u16, u16)>();
-
-        thread::spawn(move || {
-            loop {
-                thread::sleep(Duration::from_millis(20));
-                tx.send(terminal::size().unwrap()).unwrap();
-            }
-        });
-
-        rx
-    }
-
-    fn observe_key_input(&self) -> Receiver<KeyEvent> {
-        let (tx, rx) = mpsc::channel::<KeyEvent>();
-
-        thread::spawn(move || {
-            loop {
-                let event = read().unwrap();
-
-                if let Event::Key(e) = event {
-                    tx.send(e).unwrap();
-                }
-            }
-        });
-
-        rx
-    }
-
-    fn auto_step_tick(&self) -> Receiver<()> {
-        let (tx, rx) = mpsc::channel::<()>();
-
-        thread::spawn(move || {
-            loop {
-                thread::sleep(Duration::from_millis(20));
-                tx.send(()).unwrap();
-            }
-        });
-
-        rx
     }
 }
