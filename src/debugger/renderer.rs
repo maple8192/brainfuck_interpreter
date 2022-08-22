@@ -56,10 +56,12 @@ impl Renderer {
         display.push(create_str("Code:", None));
 
         let mut code_lines = Vec::<Vec<TerminalChar>>::new();
+        let mut code_line_count = 0;
         if machine.code.len() <= width_limit * 7 {
             for i in 0..machine.code.len() {
                 if i % width_limit == 0 {
                     code_lines.push(create_str("  ", None));
+                    code_line_count += 1;
                 }
 
                 code_lines.last_mut().unwrap().push(TerminalChar { char: token_to_char(&machine.code[i]) as u8, highlight: if i == machine.program_pointer { Some(HighLight::Code) } else { None } });
@@ -74,6 +76,7 @@ impl Renderer {
                     code_lines.last_mut().unwrap().push(TerminalChar { char: token_to_char(&machine.code[i]) as u8, highlight: if i == machine.program_pointer { Some(HighLight::Code) } else { None } });
                 }
                 code_lines.push(create_str("  ...", None));
+                code_line_count = 7;
             } else {
                 let line = machine.program_pointer / width_limit;
                 let block = (line - 1) / 5;
@@ -84,9 +87,11 @@ impl Renderer {
 
                 if block == last_block {
                     code_lines.push(create_str("  ...", None));
+                    code_line_count = 1;
                     for i in (block * 5 + 1) * width_limit..machine.code.len() {
                         if i % width_limit == 0 {
                             code_lines.push(create_str("  ", None));
+                            code_line_count += 1;
                         }
 
                         code_lines.last_mut().unwrap().push(TerminalChar { char: token_to_char(&machine.code[i]) as u8, highlight: if i == machine.program_pointer { Some(HighLight::Code) } else { None } });
@@ -101,12 +106,17 @@ impl Renderer {
                         code_lines.last_mut().unwrap().push(TerminalChar { char: token_to_char(&machine.code[i]) as u8, highlight: if i == machine.program_pointer { Some(HighLight::Code) } else { None } });
                     }
                     code_lines.push(create_str("  ...", None));
+                    code_line_count = 7;
                 }
             }
         }
 
         for itr in code_lines.iter() {
             display.push(itr.clone());
+        }
+
+        for _ in 0..7 - code_line_count {
+            display.push(Vec::new());
         }
 
         display.push(Vec::new());
@@ -117,10 +127,12 @@ impl Renderer {
         let memory_width_limit = width_limit / 5;
 
         let mut memory_lines = Vec::<Vec<TerminalChar>>::new();
+        let mut memory_line_count = 0;
         if machine.memory.len() <= memory_width_limit * 7 {
             for i in 0..machine.memory.len() {
                 if i % memory_width_limit == 0 {
                     memory_lines.push(create_str("", None));
+                    memory_line_count += 1;
                 }
 
                 push_str(memory_lines.last_mut().unwrap(), "  ", None);
@@ -137,6 +149,7 @@ impl Renderer {
                     push_str(memory_lines.last_mut().unwrap(), format!("{:>3}", machine.memory[i]).as_str(), if i == machine.pointer as usize { Some(HighLight::Memory) } else { None })
                 }
                 memory_lines.push(create_str("  ...", None));
+                memory_line_count = 7;
             } else {
                 let line = machine.pointer as usize / memory_width_limit;
                 let block = (line - 1) / 5;
@@ -147,9 +160,11 @@ impl Renderer {
 
                 if block == last_block {
                     memory_lines.push(create_str("  ...", None));
+                    memory_line_count = 1;
                     for i in ((block * 5) + 1) * memory_width_limit..machine.memory.len() {
                         if i % memory_width_limit == 0 {
                             memory_lines.push(create_str("", None));
+                            memory_line_count += 1;
                         }
 
                         push_str(memory_lines.last_mut().unwrap(), "  ", None);
@@ -166,6 +181,7 @@ impl Renderer {
                         push_str(memory_lines.last_mut().unwrap(), format!("{:>3}", machine.memory[i]).as_str(), if i == machine.pointer as usize { Some(HighLight::Memory) } else { None })
                     }
                     memory_lines.push(create_str("  ...", None));
+                    memory_line_count = 7;
                 }
             }
         }
@@ -174,20 +190,27 @@ impl Renderer {
             display.push(itr.clone());
         }
 
+        for _ in 0..7 - memory_line_count {
+            display.push(Vec::new());
+        }
+
         display.push(Vec::new());
 
         // 入力
         display.push(create_str("Input:", None));
 
         let mut input_lines = Vec::<Vec<TerminalChar>>::new();
+        let mut input_line_count = 1;
         input_lines.push(create_str("  ", None));
         for itr in machine.input.iter() {
             if *itr == '\n' {
                 if input_lines.len() == 6 {
                     input_lines.push(create_str("  ...", None));
+                    input_line_count = 7;
                     break;
                 } else {
                     input_lines.push(create_str("  ", None));
+                    input_line_count += 1;
                 }
             } else {
                 input_lines.last_mut().unwrap().push(TerminalChar { char: *itr as u8, highlight: None });
@@ -196,6 +219,10 @@ impl Renderer {
 
         for itr in input_lines.iter() {
             display.push(itr.clone());
+        }
+
+        for _ in 0..7 - input_line_count {
+            display.push(Vec::new());
         }
 
         display.push(Vec::new());
@@ -214,8 +241,14 @@ impl Renderer {
         }
 
         if output_lines.len() <= 7 {
+            let mut output_line_count = 0;
             for itr in output_lines.iter() {
                 display.push(itr.clone());
+                output_line_count += 1;
+            }
+
+            for _ in 0..7 - output_line_count {
+                display.push(Vec::new());
             }
         } else {
             display.push(create_str("  ...", None));
