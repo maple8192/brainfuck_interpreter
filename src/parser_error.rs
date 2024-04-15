@@ -33,10 +33,12 @@ impl Display for ParserError<'_> {
         let col = self.pos - last_head;
 
         writeln!(f, "parser error ({}:{}): {}", line + 1, col + 1, self.message)?;
-        writeln!(f, "{}", code)?;
+
+        let number = format!("  {} | ", col + 1);
+        writeln!(f, "{number}{code}")?;
 
         let mut space = String::new();
-        for _ in 0..col {
+        for _ in 0..(col + number.chars().count()) {
             space.push(' ');
         }
         write!(f, "{}^", space)

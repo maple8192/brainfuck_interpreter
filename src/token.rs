@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub enum TokenType {
     Inc,    // +
     Dec,    // -
@@ -10,7 +10,7 @@ pub enum TokenType {
     Ret     // ]
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Token {
     pub typ: TokenType,
     pub pos: usize
