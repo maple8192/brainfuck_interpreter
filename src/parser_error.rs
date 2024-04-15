@@ -34,7 +34,7 @@ impl Display for ParserError<'_> {
 
         writeln!(f, "parser error ({}:{}): {}", line + 1, col + 1, self.message)?;
 
-        let number = format!("  {} | ", col + 1);
+        let number = format!("  {} | ", line + 1);
         writeln!(f, "{number}{code}")?;
 
         let mut space = String::new();
