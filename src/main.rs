@@ -1,3 +1,4 @@
+use std::io::stdin;
 use crate::executor::execute;
 use crate::lexer::tokenize;
 use crate::parser::parse;
@@ -6,13 +7,12 @@ mod lexer;
 mod token;
 mod parser;
 mod ast;
-mod parser_error;
 mod executor;
+mod memory;
+mod error;
 
 const PROGRAM: &str = "
->+++++++++[<++++++++>-]<.>+++++++[<++++>-]<+.+++++++..+++.[-]
->++++++++[<++++>-] <.>+++++++++++[<++++++++>-]<-.--------.+++
-.------.--------.[-]>++++++++[<++++>-]<+.[-]++++++++++.
+>++++>+++++>++++++[[-]<]
 ";
 
 fn main() {
@@ -25,5 +25,6 @@ fn main() {
         }
     };
     println!("{ast:?}");
-    execute(ast);
+    let Err(err) = execute(ast, stdin(), PROGRAM) else { return };
+    println!("{err}");
 }

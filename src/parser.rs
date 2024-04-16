@@ -1,13 +1,13 @@
 use crate::ast::{Node, NodeType, Program};
-use crate::parser_error::ParserError;
+use crate::error::ProgramError;
 use crate::token::{Token, TokenType};
 
-pub fn parse(tokens: Vec<Token>, src: &str) -> Result<Program, ParserError> {
+pub fn parse(tokens: Vec<Token>, src: &str) -> Result<Program, ProgramError> {
     let mut pos = 0;
     Ok(Program(_parse(&tokens, &mut pos, None, src)?))
 }
 
-fn _parse<'a>(tokens: &[Token], pos: &mut usize, bracket: Option<usize>, src: &'a str) -> Result<Vec<Node>, ParserError<'a>> {
+fn _parse<'a>(tokens: &[Token], pos: &mut usize, bracket: Option<usize>, src: &'a str) -> Result<Vec<Node>, ProgramError<'a>> {
     let mut commands = Vec::new();
 
     while *pos < tokens.len() {
@@ -26,7 +26,7 @@ fn _parse<'a>(tokens: &[Token], pos: &mut usize, bracket: Option<usize>, src: &'
             }
             TokenType::Ret => {
                 if bracket.is_none() {
-                    return Err(ParserError { src, pos: tokens[p].pos, message: "Open bracket not found" });
+                    return Err(ProgramError::new(src, tokens[p].pos, "open bracket not found"));
                 }
 
                 return Ok(commands);
@@ -38,7 +38,7 @@ fn _parse<'a>(tokens: &[Token], pos: &mut usize, bracket: Option<usize>, src: &'
     }
 
     if let Some(st) = bracket {
-        return Err(ParserError { src, pos: tokens[st].pos, message: "Close bracket not found" })
+        return Err(ProgramError::new(src, tokens[st].pos, "close bracket not found"));
     }
 
     Ok(commands)

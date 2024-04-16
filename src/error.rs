@@ -2,13 +2,19 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
-pub struct ParserError<'a> {
-    pub src: &'a str,
-    pub pos: usize,
-    pub message: &'a str
+pub struct ProgramError<'a> {
+    src: &'a str,
+    pos: usize,
+    message: &'a str
 }
 
-impl Display for ParserError<'_> {
+impl<'a> ProgramError<'a> {
+    pub fn new(src: &'a str, pos: usize, message: &'a str) -> Self {
+        ProgramError { src, pos, message }
+    }
+}
+
+impl Display for ProgramError<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let src = self.src.chars().collect::<Vec<char>>();
 
@@ -32,7 +38,7 @@ impl Display for ParserError<'_> {
 
         let col = self.pos - last_head;
 
-        writeln!(f, "parser error ({}:{}): {}", line + 1, col + 1, self.message)?;
+        writeln!(f, "an error occurred ({}:{}): {}", line + 1, col + 1, self.message)?;
 
         let number = format!("  {} | ", line + 1);
         writeln!(f, "{number}{code}")?;
@@ -45,4 +51,4 @@ impl Display for ParserError<'_> {
     }
 }
 
-impl Error for ParserError<'_> {}
+impl Error for ProgramError<'_> {}
