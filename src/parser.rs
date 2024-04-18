@@ -3,43 +3,40 @@ use crate::error::ProgramError;
 use crate::token::{Token, TokenType};
 
 pub fn parse(tokens: Vec<Token>, src: &str) -> Result<Program, ProgramError> {
+    let mut nodes = Vec::new();
+
+    let mut brackets = Vec::new();
     let mut pos = 0;
-    Ok(Program(_parse(&tokens, &mut pos, None, src)?))
-}
-
-fn _parse<'a>(tokens: &[Token], pos: &mut usize, bracket: Option<usize>, src: &'a str) -> Result<Vec<Node>, ProgramError<'a>> {
-    let mut commands = Vec::new();
-
-    while *pos < tokens.len() {
-        let p = *pos;
-        let typ = match tokens[p].typ {
-            TokenType::Inc => NodeType::Inc,
-            TokenType::Dec => NodeType::Dec,
-            TokenType::Shr => NodeType::Shr,
-            TokenType::Shl => NodeType::Shl,
-            TokenType::Out => NodeType::Out,
-            TokenType::In => NodeType::In,
+    while pos < tokens.len() {
+        let typ = match tokens[pos].typ {
+            TokenType::Inc => Some(NodeType::Inc),
+            TokenType::Dec => Some(NodeType::Dec),
+            TokenType::Shr => Some(NodeType::Shr),
+            TokenType::Shl => Some(NodeType::Shl),
+            TokenType::Out => Some(NodeType::Out),
+            TokenType::In => Some(NodeType::In),
             TokenType::Jmp => {
-                let start = p;
-                *pos += 1;
-                NodeType::Bracket(_parse(tokens, pos, Some(start), src)?)
+                brackets.push(pos);
+                None
             }
             TokenType::Ret => {
-                if bracket.is_none() {
-                    return Err(ProgramError::new(src, tokens[p].pos, "open bracket not found"));
-                }
+                let Some(p) = brackets.pop() else { return Err(ProgramError::new(src, pos, "pair bracket not found")) };
 
-                return Ok(commands);
+                nodes[p] = Some(Node { typ: NodeType::Jmp(pos + 1), token: tokens[p] });
+                Some(NodeType::Ret(p))
             }
         };
-        commands.push(Node { typ, token: tokens[p] });
 
-        *pos += 1;
+        nodes.push(typ.map(|typ| Node { typ, token: tokens[pos] }));
+
+        pos += 1;
     }
 
-    if let Some(st) = bracket {
-        return Err(ProgramError::new(src, tokens[st].pos, "close bracket not found"));
+    if let Some(rem) = brackets.last() {
+        return Err(ProgramError::new(src, *rem, "pair bracket not found"));
     }
 
-    Ok(commands)
+    let nodes = nodes.into_iter().map(|node| node.unwrap()).collect();
+
+    Ok(Program(nodes))
 }

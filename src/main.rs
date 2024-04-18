@@ -12,7 +12,7 @@ mod memory;
 mod error;
 
 const PROGRAM: &str = "
->++++>+++++>++++++[[-]<]
+++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.
 ";
 
 fn main() {
@@ -24,7 +24,6 @@ fn main() {
             return;
         }
     };
-    println!("{ast:?}");
     let Err(err) = execute(ast, stdin(), PROGRAM) else { return };
     println!("{err}");
 }

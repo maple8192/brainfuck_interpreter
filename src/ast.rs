@@ -8,7 +8,8 @@ pub enum NodeType {
     Shl,
     Out,
     In,
-    Bracket(Vec<Node>)
+    Jmp(usize),
+    Ret(usize)
 }
 
 #[derive(Debug)]
