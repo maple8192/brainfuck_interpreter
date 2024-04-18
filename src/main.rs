@@ -15,15 +15,9 @@ const PROGRAM: &str = "
 ++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.
 ";
 
-fn main() {
+fn main() -> Result<(), ()> {
     let tokens = tokenize(PROGRAM);
-    let ast = match parse(tokens, PROGRAM) {
-        Ok(ast) => ast,
-        Err(err) => {
-            println!("{err}");
-            return;
-        }
-    };
-    let Err(err) = execute(ast, stdin(), PROGRAM) else { return };
-    println!("{err}");
+    let ast = parse(tokens, PROGRAM).map_err(|e| println!("{e}"))?;
+    execute(ast, stdin(), PROGRAM).map_err(|e| println!("{e}"))?;
+    Ok(())
 }
