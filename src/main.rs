@@ -1,4 +1,4 @@
-use std::io::stdin;
+use std::io::{stdin, stdout};
 
 use crate::interpreter::interpret;
 
@@ -16,7 +16,7 @@ const PROGRAM: &str = "
 ";
 
 fn main() {
-    let ret = interpret(PROGRAM, stdin());
+    let ret = interpret(PROGRAM, stdin(), stdout());
     if let Err(err) = ret {
         println!("{err}");
     }
