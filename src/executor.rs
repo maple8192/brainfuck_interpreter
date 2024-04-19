@@ -19,14 +19,8 @@ pub fn execute(ast: Program, mut input: impl Read, mut output: impl Write, src: 
             NodeType::Shl => memory.shift_left().map_err(|_| ProgramError::new(src, program[p].token.pos, "memory out of range"))?,
             NodeType::Out => write!(&mut output, "{}", memory.get() as char).map_err(|_| ProgramError::new(src, program[p].token.pos, "io error"))?,
             NodeType::In => memory.set(read_u8(&mut input).map_err(|_| ProgramError::new(src, program[p].token.pos, "io error"))?),
-            NodeType::Jmp(to) => if memory.get() == 0 {
-                p = to;
-                continue;
-            }
-            NodeType::Ret(to) => {
-                p = to;
-                continue;
-            },
+            NodeType::Jmp(to) => if memory.get() == 0 { p = to }
+            NodeType::Ret(to) => if memory.get() != 0 { p = to }
         }
 
         p += 1;

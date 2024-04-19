@@ -22,7 +22,7 @@ pub fn parse(tokens: Vec<Token>, src: &str) -> Result<Program, ProgramError> {
             TokenType::Ret => {
                 let Some(p) = brackets.pop() else { return Err(ProgramError::new(src, pos, "pair bracket not found")) };
 
-                nodes[p] = Some(Node { typ: NodeType::Jmp(pos + 1), token: tokens[p] });
+                nodes[p] = Some(Node { typ: NodeType::Jmp(pos), token: tokens[p] });
                 Some(NodeType::Ret(p))
             }
         };
