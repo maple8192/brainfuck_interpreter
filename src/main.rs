@@ -1,6 +1,7 @@
-use std::fs::read_to_string;
+use std::fs::{File, read_to_string};
 use std::io::{stdin, stdout};
 use std::path::PathBuf;
+
 use clap::{arg, command, Parser};
 
 use crate::interpreter::interpret;
@@ -13,6 +14,7 @@ mod executor;
 mod memory;
 mod error;
 mod interpreter;
+mod logger;
 
 #[derive(Parser)]
 #[command(version)]
@@ -20,7 +22,10 @@ struct Args {
     source: Option<String>,
 
     #[arg(short, long)]
-    file: Option<PathBuf>
+    file: Option<PathBuf>,
+
+    #[arg(short, long)]
+    log: Option<PathBuf>
 }
 
 fn main() {
@@ -42,7 +47,18 @@ fn main() {
         }
     };
 
-    let ret = interpret(&source, stdin(), stdout());
+    let log_file = match args.log {
+        Some(path) => match File::create(path) {
+            Ok(file) => Some(file),
+            Err(err) => {
+                println!("{err}");
+                return;
+            }
+        }
+        None => None
+    };
+
+    let ret = interpret(&source, stdin(), stdout(), log_file);
     if let Err(err) = ret {
         println!("{err}");
     }

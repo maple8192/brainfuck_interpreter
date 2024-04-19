@@ -44,7 +44,7 @@ impl Display for ProgramError<'_> {
         writeln!(f, "{number}{code}")?;
 
         let mut space = String::new();
-        for _ in 0..(col + number.chars().count() + 1) {
+        for _ in 0..(col + number.chars().count()) {
             space.push(' ');
         }
         write!(f, "{}^", space)

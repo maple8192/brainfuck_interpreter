@@ -39,4 +39,12 @@ impl Memory {
         self.pointer -= 1;
         Ok(())
     }
+
+    pub fn memory(&self) -> &Vec<u8> {
+        &self.memory
+    }
+
+    pub fn pointer(&self) -> usize {
+        self.pointer
+    }
 }

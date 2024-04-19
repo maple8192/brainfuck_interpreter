@@ -5,9 +5,9 @@ use crate::executor::execute;
 use crate::lexer::tokenize;
 use crate::parser::parse;
 
-pub fn interpret(src: &str, input: impl Read, output: impl Write) -> Result<(), ProgramError> {
+pub fn interpret(src: &str, input: impl Read, output: impl Write, log: Option<impl Write>) -> Result<(), ProgramError> {
     let tokens = tokenize(src);
     let ast = parse(tokens, src)?;
-    execute(ast, input, output, src)?;
+    execute(ast, input, output, log, src)?;
     Ok(())
 }
