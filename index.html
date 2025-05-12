@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head><link rel="modulepreload" href="brainfuck_interpreter/brainfuck_interpreter-657569d2ad027a22.js" crossorigin="anonymous" integrity="sha384-JXTUi1bHTBw5IXepoNIM3X8WDpYdkh0BZ1I8Urec3KUCluaD9eyD7tF9wsoCnkjA"><link rel="preload" href="brainfuck_interpreter/brainfuck_interpreter-657569d2ad027a22_bg.wasm" crossorigin="anonymous" integrity="sha384-Sq8n+VWddjqZVE6y6qxQWlBtIaipmVvLdu8bYJMqHcopM2y16bM0PGHtXa3UDdV/" as="fetch" type="application/wasm"></head>
+    <body>
+<script type="module">
+import init, * as bindings from 'brainfuck_interpreter/brainfuck_interpreter-657569d2ad027a22.js';
+const wasm = await init({ module_or_path: 'brainfuck_interpreter/brainfuck_interpreter-657569d2ad027a22_bg.wasm' });
+
+
+window.wasmBindings = bindings;
+
+
+dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
+
+</script></body>
+</html>
