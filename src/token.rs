@@ -1,17 +1,25 @@
-#[derive(Debug, Copy, Clone)]
-pub enum TokenType {
-    Inc,
-    Dec,
-    Shr,
-    Shl,
-    Out,
-    In,
-    Jmp,
-    Ret 
+use crate::{position::Position, token_kind::TokenKind};
+
+/// Represents a token in the source code.
+#[derive(Debug, Clone, Copy)]
+pub struct Token {
+    kind: TokenKind,
+    pos: Position,
 }
 
-#[derive(Debug, Copy, Clone)]
-pub struct Token {
-    pub typ: TokenType,
-    pub pos: usize
+impl Token {
+    /// Creates a new token with the given kind and position.
+    pub fn new(kind: TokenKind, pos: Position) -> Self {
+        Self { kind, pos }
+    }
+
+    /// Returns the kind of the token.
+    pub fn kind(&self) -> TokenKind {
+        self.kind
+    }
+
+    /// Returns the position of the token.
+    pub fn pos(&self) -> Position {
+        self.pos
+    }
 }

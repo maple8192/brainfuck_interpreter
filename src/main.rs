@@ -1,65 +1,42 @@
-use std::fs::{File, read_to_string};
-use std::io::{stdin, stdout};
-use std::path::PathBuf;
+use std::{
+    fs::read_to_string,
+    io::{stdin, stdout},
+    path::PathBuf,
+};
 
-use clap::{arg, command, Parser};
+use anyhow::anyhow;
+use clap::{command, Parser};
 
-use crate::interpreter::interpret;
-
-mod lexer;
-mod token;
-mod parser;
-mod ast;
-mod executor;
-mod memory;
-mod error;
-mod interpreter;
-mod logger;
-
+/// Represents a command line argument.
 #[derive(Parser)]
 #[command(version)]
 struct Args {
+    /// Source code to be interpreted.
     source: Option<String>,
 
+    /// File path to the source code.
     #[arg(short, long)]
     file: Option<PathBuf>,
-
-    #[arg(short, long)]
-    log: Option<PathBuf>
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let args = Args::parse();
-    let source = match args.source {
-        Some(source) => source,
-        None => match args.file {
-            Some(path) => match read_to_string(path) {
-                Ok(source) => source,
-                Err(err) => {
-                    println!("{err}");
-                    return;
-                }
-            },
-            None => {
-                println!("needs a code or a file path");
-                return;
-            }
-        }
-    };
+    let source = get_source(&args)?;
+    brainfuck_interpreter::run(&source, stdin().lock(), stdout())?;
+    Ok(())
+}
 
-    let log_file = match args.log {
-        Some(path) => match File::create(path) {
-            Ok(file) => Some(file),
-            Err(err) => {
-                println!("{err}");
-                return;
-            }
-        }
-        None => None
-    };
-
-    let ret = interpret(&source, stdin(), stdout(), log_file);
-    if let Err(err) = ret {
-        println!("{err}");
+/// Returns the source code from the command line arguments or reads it from the specified file.
+///
+/// # Errors
+///
+/// Returns an error if neither source code nor file path is provided, or if the file cannot be read.
+fn get_source(args: &Args) -> anyhow::Result<String> {
+    if let Some(src) = &args.source {
+        Ok(src.clone())
+    } else if let Some(path) = &args.file {
+        Ok(read_to_string(path)?)
+    } else {
+        Err(anyhow!("No source code provided."))
     }
 }

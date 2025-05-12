@@ -1,49 +1,110 @@
-use std::io;
-use std::io::{Read, Write};
+use std::io::{BufRead, Bytes, Write};
 
-use crate::ast::{NodeType, Program};
-use crate::error::ProgramError;
-use crate::logger::{IO, Logger};
-use crate::memory::Memory;
+use anyhow::anyhow;
 
-pub fn execute(ast: Program, mut input: impl Read, mut output: impl Write, log: Option<impl Write>, src: &str) -> Result<(), ProgramError> {
-    let Program(program) = ast;
+use crate::{memory::Memory, token::Token, token_kind::TokenKind};
 
-    let mut logger = log.map(|log| Logger::new(log, src));
-
-    let mut memory = Memory::new();
-
-    let mut step = 1;
-    let mut p = 0;
-    while p < program.len() {
-        match program[p].typ {
-            NodeType::Inc => memory.increment(),
-            NodeType::Dec => memory.decrement(),
-            NodeType::Shr => memory.shift_right(),
-            NodeType::Shl => memory.shift_left().map_err(|_| ProgramError::new(src, program[p].token.pos, "memory out of range"))?,
-            NodeType::Out => write!(&mut output, "{}", memory.get() as char).map_err(|err| ProgramError::new(src, program[p].token.pos, err.to_string().leak()))?,
-            NodeType::In => memory.set(read_u8(&mut input).map_err(|err| ProgramError::new(src, program[p].token.pos, err.to_string().leak()))?),
-            NodeType::Jmp(to) => if memory.get() == 0 { p = to }
-            NodeType::Ret(to) => if memory.get() != 0 { p = to }
-        }
-
-        if let Some(logger) = &mut logger {
-            logger.log(step, program[p].token, &memory, match program[p].typ {
-                NodeType::Out => Some(IO::Out),
-                NodeType::In => Some(IO::In),
-                _ => None
-            }).map_err(|err| ProgramError::new(src, program[p].token.pos, err.to_string().leak()))?;
-        }
-
-        step += 1;
-        p += 1;
-    }
-
-    Ok(())
+/// Represents a executor of brainfuck program.
+pub struct Executor<In: BufRead, Out: Write> {
+    program: Vec<Token>,
+    input: Bytes<In>,
+    output: Out,
+    memory: Memory,
+    pc: usize,
 }
 
-fn read_u8(input: &mut impl Read) -> io::Result<u8> {
-    let mut buf = [0; 1];
-    input.read_exact(&mut buf)?;
-    Ok(buf[0])
+impl<In: BufRead, Out: Write> Executor<In, Out> {
+    /// Creates a new executor instance with the given program and output destination.
+    pub fn new(program: Vec<Token>, input: In, output: Out) -> Self {
+        Self {
+            program,
+            input: input.bytes(),
+            output,
+            memory: Memory::default(),
+            pc: 0,
+        }
+    }
+
+    /// Executes a single step of the program.
+    /// Returns `Ok(false)` if the program has finished.
+    pub fn step(&mut self) -> anyhow::Result<bool> {
+        if self.pc >= self.program.len() {
+            return Ok(false);
+        }
+
+        let token = &self.program[self.pc];
+        match token.kind() {
+            TokenKind::Inc => self.memory.increment(),
+            TokenKind::Dec => self.memory.decrement(),
+            TokenKind::Shr => self.memory.shift_right(),
+            TokenKind::Shl => self.memory.shift_left().map_err(|err| {
+                anyhow!(
+                    "Error occurred in ({}:{}): {err}",
+                    token.pos().row(),
+                    token.pos().col()
+                )
+            })?,
+            TokenKind::Out => {
+                self.output.write_all(&[self.memory.get()])?;
+                self.output.flush()?;
+            }
+            TokenKind::In => {
+                let ch = self
+                    .input
+                    .next()
+                    .ok_or_else(|| anyhow!("Input stream ended"))??;
+                dbg!(ch);
+                self.memory.set(ch);
+            }
+            TokenKind::Jmp => {
+                if self.memory.get() == 0 {
+                    let mut depth = 1;
+                    while depth > 0 {
+                        self.pc += 1;
+                        if self.pc >= self.program.len() {
+                            return Err(anyhow!(
+                                "Error occurred in ({}:{}): Not found matching `]`",
+                                token.pos().row(),
+                                token.pos().col()
+                            ));
+                        }
+                        match self.program[self.pc].kind() {
+                            TokenKind::Jmp => depth += 1,
+                            TokenKind::Ret => depth -= 1,
+                            _ => (),
+                        }
+                    }
+                }
+            }
+            TokenKind::Ret => {
+                if self.memory.get() != 0 {
+                    let mut depth = 1;
+                    while depth > 0 {
+                        if self.pc == 0 {
+                            return Err(anyhow!(
+                                "Error occurred in ({}:{}): Not found matching `[`",
+                                token.pos().row(),
+                                token.pos().col()
+                            ));
+                        }
+                        self.pc -= 1;
+                        match self.program[self.pc].kind() {
+                            TokenKind::Jmp => depth -= 1,
+                            TokenKind::Ret => depth += 1,
+                            _ => (),
+                        }
+                    }
+                }
+            }
+        }
+
+        self.pc += 1;
+        Ok(true)
+    }
+
+    /// Executes the entire program.
+    pub fn run(&mut self) -> anyhow::Result<()> {
+        while self.step()? {}
+        Ok(())
+    }
 }
