@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="ja">
-    <head><link rel="modulepreload" href="/brainfuck_interpreter/brainfuck_interpreter-657569d2ad027a22.js" crossorigin="anonymous" integrity="sha384-JXTUi1bHTBw5IXepoNIM3X8WDpYdkh0BZ1I8Urec3KUCluaD9eyD7tF9wsoCnkjA"><link rel="preload" href="/brainfuck_interpreter/brainfuck_interpreter-657569d2ad027a22_bg.wasm" crossorigin="anonymous" integrity="sha384-Sq8n+VWddjqZVE6y6qxQWlBtIaipmVvLdu8bYJMqHcopM2y16bM0PGHtXa3UDdV/" as="fetch" type="application/wasm"></head>
+    <head><link rel="modulepreload" href="/brainfuck_interpreter/bfi_app-462d729a8ec790da.js" crossorigin="anonymous" integrity="sha384-rDLDQLc13lwGfN2LxhcBl4BekmMRBwbI0vS7zM++a3HSBBROj+HLjJJ7fVj7nVo6"><link rel="preload" href="/brainfuck_interpreter/bfi_app-462d729a8ec790da_bg.wasm" crossorigin="anonymous" integrity="sha384-BiG4w7n096aloW2qPESggyG2Ni1NSoGWXFvvlviSyiHstVz/Trsysn87AADJkB9s" as="fetch" type="application/wasm"></head>
     <body>
 <script type="module">
-import init, * as bindings from '/brainfuck_interpreter/brainfuck_interpreter-657569d2ad027a22.js';
-const wasm = await init({ module_or_path: '/brainfuck_interpreter/brainfuck_interpreter-657569d2ad027a22_bg.wasm' });
+import init, * as bindings from '/brainfuck_interpreter/bfi_app-462d729a8ec790da.js';
+const wasm = await init({ module_or_path: '/brainfuck_interpreter/bfi_app-462d729a8ec790da_bg.wasm' });
 
 
 window.wasmBindings = bindings;

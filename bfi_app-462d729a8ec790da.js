@@ -555,11 +555,11 @@ function __wbg_get_imports() {
         const ret = false;
         return ret;
     };
-    imports.wbg.__wbindgen_closure_wrapper253 = function(arg0, arg1, arg2) {
+    imports.wbg.__wbindgen_closure_wrapper252 = function(arg0, arg1, arg2) {
         const ret = makeClosure(arg0, arg1, 66, __wbg_adapter_20);
         return ret;
     };
-    imports.wbg.__wbindgen_closure_wrapper402 = function(arg0, arg1, arg2) {
+    imports.wbg.__wbindgen_closure_wrapper401 = function(arg0, arg1, arg2) {
         const ret = makeMutClosure(arg0, arg1, 115, __wbg_adapter_23);
         return ret;
     };
@@ -652,7 +652,7 @@ async function __wbg_init(module_or_path) {
     }
 
     if (typeof module_or_path === 'undefined') {
-        module_or_path = new URL('brainfuck_interpreter_bg.wasm', import.meta.url);
+        module_or_path = new URL('bfi_app_bg.wasm', import.meta.url);
     }
     const imports = __wbg_get_imports();
 
